@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Internal Docs AI</title>
+  <link rel="stylesheet" href="homepage.css">
+</head>
+<body>
+  <!-- Status Indicator -->
+  <div class="status-indicator" id="statusIndicator">Connected</div>
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <h1>
+      <span class="logo">🔍</span>
+      InfoLens
+    </h1>
+    <div class="search-bar">
+      <input type="text" id="topSearch" placeholder="Search anything in our knowledge base..." onkeypress="handleTopSearch(event)">
+    </div>
+    <div class="avatar">👤</div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="container">
+    <!-- Enhanced Sidebar -->
+    <div class="sidebar">
+      <h3>📁 Categories</h3>
+      <ul>
+        <li onclick="sendMessage('Show HR policies')">👥 HR Policies</li>
+        <li onclick="sendMessage('Show IT policies')">💻 IT & Security</li>
+        <li onclick="sendMessage('Show finance policies')">💰 Finance</li>
+        <li onclick="sendMessage('Show customer service')">🎧 Customer Service</li>
+      </ul>
+      
+      <h3>🔥 Popular</h3>
+      <ul>
+        <li onclick="sendMessage('Leave policy')">🏖️ Leave Policy</li>
+        <li onclick="sendMessage('WFH policy')">🏠 Work From Home</li>
+        <li onclick="sendMessage('Expense policy')">💳 Expenses</li>
+        <li onclick="sendMessage('Refund policy')">↩️ Refunds</li>
+      </ul>
+      
+      <h3>📌 Quick Help</h3>
+      <ul>
+        <li onclick="sendMessage('Company holidays')">📅 Holiday Calendar</li>
+        <li onclick="sendMessage('Salary structure')">💸 Salary Info</li>
+        <li onclick="sendMessage('IT support')">🛠️ IT Support</li>
+        <li onclick="sendMessage('Contact HR')">📞 Contact HR</li>
+      </ul>
+    </div>
+
+    <!-- Enhanced Chat -->
+    <div class="chat-panel">
+      <div class="messages" id="messages">
+        <div class="message">
+          <span class="bot-msg">
+            👋 <strong>Welcome to InfoLens!</strong><br>
+            I'm your AI assistant for company documentation. Ask me about policies, procedures, or search for specific information.<br><br>
+            <em>Try asking: "What's the leave policy?" or "How do I submit expenses?"</em>
+          </span>
+        </div>
+      </div>
+
+      <!-- Enhanced Quick Actions -->
+      <div class="quick-actions">
+        <button onclick="sendMessage('Search all documents')">🔍 Search All</button>
+        <button onclick="sendMessage('Recent updates')">📋 Recent Updates</button>
+        <button onclick="sendMessage('Most popular docs')">⭐ Popular Docs</button>
+        <button onclick="sendMessage('Contact support')">💬 Get Help</button>
+      </div>
+
+      <!-- Enhanced Input -->
+      <div class="input-area">
+        <input type="text" id="userInput" placeholder="Ask me anything about company policies..." onkeypress="handleKeyPress(event)">
+        <button onclick="handleUserInput()">Send ✨</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Enhanced status indicator
+    function showStatus(message, isError = false) {
+      const indicator = document.getElementById('statusIndicator');
+      indicator.textContent = message;
+      indicator.className = `status-indicator show ${isError ? 'error' : ''}`;
+      setTimeout(() => {
+        indicator.classList.remove('show');
+      }, 3000);
+    }
+
+    // Enhanced typing indicator
+    function showTypingIndicator() {
+      const messagesDiv = document.getElementById('messages');
+      const typingDiv = document.createElement('div');
+      typingDiv.classList.add('message');
+      typingDiv.id = 'typing';
+      typingDiv.innerHTML = `
+        <span class="bot-msg typing">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <span style="margin-left: 10px;">Thinking...</span>
+        </span>
+      `;
+      messagesDiv.appendChild(typingDiv);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+      const typing = document.getElementById('typing');
+      if (typing) typing.remove();
+    }
+
+    // Handle Enter key press in main input
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        handleUserInput();
+      }
+    }
+
+    // Handle Enter key press in top search
+    function handleTopSearch(event) {
+      if (event.key === 'Enter') {
+        const topSearchInput = document.getElementById('topSearch');
+        const query = topSearchInput.value.trim();
+        if (query) {
+          sendMessage(query);
+          topSearchInput.value = '';
+        }
+      }
+    }
+
+    // Handle user input from main input field
+    async function handleUserInput() {
+      const input = document.getElementById('userInput');
+      const msg = input.value.trim();
+      if (msg) {
+        sendMessage(msg);
+        input.value = '';
+      }
+    }
+
+    // Enhanced send message function
+    async function sendMessage(msg) {
+      const messagesDiv = document.getElementById('messages');
+
+      // Add user message with animation
+      const userMsgDiv = document.createElement('div');
+      userMsgDiv.classList.add('message');
+      userMsgDiv.innerHTML = `<span class="user-msg">${escapeHtml(msg)}</span>`;
+      messagesDiv.appendChild(userMsgDiv);
+
+      // Show enhanced typing indicator
+      showTypingIndicator();
+
+      try {
+        showStatus('Processing your request...');
+
+        const res = await fetch('/ask', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ query: msg })
+        });
+
+        if (!res.ok) {
+          throw new Error(`Server error: ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        removeTypingIndicator();
+
+        // Add bot response with enhanced formatting
+        const botMsgDiv = document.createElement('div');
+        botMsgDiv.classList.add('message');
+        
+        let formattedAnswer = escapeHtml(data.answer)
+          .replace(/\n\n/g, '<br><br>')
+          .replace(/\n/g, '<br>')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/📂 Search Results:/g, '<strong>📂 Search Results:</strong>')
+          .replace(/💡 AI Suggestion:/g, '<strong>💡 AI Suggestion:</strong>');
+        
+        botMsgDiv.innerHTML = `<span class="bot-msg">${formattedAnswer}</span>`;
+        messagesDiv.appendChild(botMsgDiv);
+
+        showStatus('✅ Response received');
+
+      } catch (error) {
+        console.error('Error:', error);
+        
+        removeTypingIndicator();
+
+        const errorMsgDiv = document.createElement('div');
+        errorMsgDiv.classList.add('message');
+        errorMsgDiv.innerHTML = `
+          <span class="bot-msg">
+            ⚠️ <strong>Oops! Something went wrong.</strong><br>
+            ${error.message}<br><br>
+            <em>Please try again or contact support if the issue persists.</em>
+          </span>
+        `;
+        messagesDiv.appendChild(errorMsgDiv);
+
+        showStatus('❌ Error occurred', true);
+      }
+
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    // Initialize with connection check
+    document.addEventListener('DOMContentLoaded', function() {
+      showStatus('🟢 InfoLens ready!');
+      
+      // Add some interactive features
+      const input = document.getElementById('userInput');
+      input.addEventListener('input', function() {
+        if (this.value.length > 0) {
+          document.querySelector('.input-area button').style.background = 
+            'linear-gradient(135deg, #28a745, #20c997)';
+        } else {
+          document.querySelector('.input-area button').style.background = 
+            'linear-gradient(135deg, #667eea, #764ba2)';
+        }
+      });
+    });
+
+    // Add keyboard shortcut for search focus
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('topSearch').focus();
+      }
+    });
+  </script>
+</body>
+</html>
+
+<!-- paste this url on browser http://localhost:3000/Homepage.html-->
